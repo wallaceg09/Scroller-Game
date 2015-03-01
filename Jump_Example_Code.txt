@@ -1,0 +1,27 @@
+void Player::Jump::update(int elapsed_time_ms){
+	if(active_){
+		time_remaining_ms_ -= elapsed_time_ms;
+		if(time_remaining_ms_ <= 0){
+			active_ = false;
+		}
+	}	
+}
+
+void Player::Jump::reset(){
+	time_remaining_ms_ = kJumpTime;
+	reactivate();
+}
+
+struct Jump{
+		Jump() : time_remaining_ms_(0), active_(false){		}
+
+		void update(int elapsed_time_ms);
+		void reset();
+
+		void reactivate(){active_ = time_remaining_ms_ > 0; }
+		void deactivate(){ active_ = false; }
+		bool active() const { return active_; }
+	private:
+		int time_remaining_ms_;
+		bool active_;
+	};

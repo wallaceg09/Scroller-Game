@@ -183,7 +183,7 @@ class ScrollGame(object):
                 elif event.key == K_LEFT:
                     self.player.move_left()
             elif event.type == pygame.KEYUP:
-                if event.key == K_RIGHT or event.key == K_LEFT:
+                if event.key == K_RIGHT or event.key == K_LEFT or event.key == K_UP:#FIXME: Issue #4
                     self.player.set_idle()
             event = pygame.event.poll()
         pass
