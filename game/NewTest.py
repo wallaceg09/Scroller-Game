@@ -76,7 +76,7 @@ class Player(DirtySprite):
         self.feet.midbottom = self.rect.midbottom
         pass
     
-    def mpve_back(self, delta):
+    def move_back(self, delta):
         self._position = self._old_position[:]
         self.rect.topleft = self._position
         self.feet.midbottom = self.rect.midbottom
@@ -108,9 +108,11 @@ class ScrollGame(object):
         self.group.add(self.player)
         
         #Initialize collision map
-        self.collision = list()
-        for object in self.tmx_data.get_layer_by_name("Collision"):
-            pass
+        self.collisions = list()
+        for collidable in self.tmx_data.get_layer_by_name("Collision"):
+            self.collisions.append(pygame.Rect(
+                                               collidable.x, collidable.y,
+                                               collidable.width, collidable.height))
         pass
         
     def run(self):
@@ -141,6 +143,9 @@ class ScrollGame(object):
         
         self.group.update(delta)
         #TODO: Check for collisions
+        for sprite in self.group.sprites():
+            if sprite.feet.collidelist(self.collisions) > -1:
+                sprite.move_back(delta)
         pass
     
     def _draw(self):
