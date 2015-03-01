@@ -87,7 +87,7 @@ class Player(DirtySprite):
     
     def update_gravity(self):
         if self.gravity:
-            self.velocity[1] += Player.GRAVITY
+            #self.velocity[1] += Player.GRAVITY
             self.velocity[1] = min(self.velocity[1] + Player.GRAVITY, Player.FALL_SPEED)
         else:
             self.velocity[1] = 0
