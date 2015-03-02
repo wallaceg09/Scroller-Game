@@ -20,6 +20,7 @@ PLAYER_FILENAME = 'wizard_green.png'
 
 SPRITESHEET_MAP = {}
 
+#TODO: Consider making a python module for all global variables
 
 def get_map(filename):
     
@@ -60,12 +61,14 @@ class Player(DirtySprite):
         self.source_rect = source_rect
         self.velocity = [0, 0]
         self._position = [0, 0]
-        self._old_position = [0, 0]
+        self._old_position = [0, 0]#TODO: Possibly remove
         self.rect = pygame.Rect(self._position[0], self._position[1], self.source_rect.width, self.source_rect.height)
         self.feet = pygame.Rect(0, 0, self.rect.width * 0.5, self.rect.height * 0.2)
         self.feet.midbottom = self.rect.midbottom
         self.state = Player.IDLE
-        self.gravity = True
+        self.gravity = True #TODO: Remove
+        self.on_ground = False
+        self.jump = Player.Jump()
         
     @property
     def position(self):
@@ -76,8 +79,9 @@ class Player(DirtySprite):
         self._position = list(value)
         
     def update(self, delta):
-        self.update_velocity()
         self.update_gravity()
+        self.update_velocity()
+        self.jump.update(delta)
         self._old_position = self._position[:]
         self._position[0] += self.velocity[0] * delta
         self._position[1] += self.velocity[1] * delta
@@ -85,11 +89,12 @@ class Player(DirtySprite):
         self.feet.midbottom = self.rect.midbottom
         pass
     
+    #TODO: Refactor out (Should be replaced with Jump code
     def update_gravity(self):
-        if self.gravity:
+        if not self.on_ground:
             #self.velocity[1] += Player.GRAVITY
             self.velocity[1] = min(self.velocity[1] + Player.GRAVITY, Player.FALL_SPEED)
-        else:
+        elif self.velocity[1] >= 0:
             self.velocity[1] = 0
         pass
     
@@ -113,12 +118,58 @@ class Player(DirtySprite):
     def set_idle(self):
         self.state = Player.IDLE
         
+    def start_jump(self):
+        print("Jumping")
+        #If player is on the ground
+        if self.on_ground:
+            self.jump.reset()
+            self.velocity[1] = -Player.Jump.JUMP_VELOCITY
+        #Else if the player is in mid jump
+        elif self.velocity[1] < 0:
+            self.jump.reactivate()
+        #Otherwise do nothing
+        
+    def stop_jump(self):
+        print("Stopping jump")
+        self.jump.deactivate()
+        
     #TODO: Remove
     def move_back(self, delta):
         self.velocity[1] = 0
         self._position = self._old_position[:]
         self.rect.topleft = self._position
         self.feet.midbottom = self.rect.midbottom
+    
+    class Jump(object):
+        JUMP_TIME = 275
+        JUMP_VELOCITY = -3000
+        def __init__(self):
+            self._active = False
+            self._time_remaining_ms = 0
+        
+        @property
+        def active(self):
+            return self._active
+        
+        def update(self, delta):
+            if self._active:
+                self._time_remaining_ms -= delta
+                if(self._time_remaining_ms <= 0):
+                    self._active = False
+            pass
+        
+        def reset(self):
+            self._time_remaining_ms = Player.Jump.JUMP_TIME
+            self.reactivate()
+            pass
+        
+        def reactivate(self):
+            self._active = self._time_remaining_ms > 0
+            pass
+        
+        def deactivate(self):
+            self._active = False
+            pass
     
 class ScrollGame(object):
     
@@ -182,9 +233,13 @@ class ScrollGame(object):
                     self.player.move_right()
                 elif event.key == K_LEFT:
                     self.player.move_left()
+                elif event.key == K_UP:
+                    self.player.start_jump()
             elif event.type == pygame.KEYUP:
                 if event.key == K_RIGHT or event.key == K_LEFT or event.key == K_UP:#FIXME: Issue #4
                     self.player.set_idle()
+                elif event.key == K_UP:
+                    self.player.stop_jump()
             event = pygame.event.poll()
         pass
     
@@ -194,10 +249,10 @@ class ScrollGame(object):
         #TODO: Check for collisions
         for sprite in self.group.sprites():
             if sprite.feet.collidelist(self.collisions) > -1:
-                sprite.gravity = False
+                sprite.on_ground = True#FIXME: Will throw an error if the sprite doesn't have an on_ground member
                 #sprite.move_back(delta)
             else:
-                sprite.gravity = True
+                sprite.on_ground = False#FIXME: Will throw an error if the sprite doesn't have an on_ground member
         pass
     
     def _draw(self):
